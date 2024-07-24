@@ -1,7 +1,7 @@
 #pragma once
 
 #ifdef _WINDOWS
-#include <windows/win.h>
+#include <windows/WinApp.h>
 inline WinApp& App()
 {
 	static WinApp app;

@@ -1,15 +1,23 @@
 #pragma once
 
+#include "RenderTarget.h"
+
 class GlInstance
 {
 private:
-	GLuint m_leftEyeFramebuffer;
-	GLuint m_leftEyeRenderbuffer;
+	RenderTarget m_leftEyeFramebuffer;
+	RenderTarget m_rightEyeFramebuffer;
+
+	GLuint m_vertexArray;
+	GLuint m_vertexBuffer;
 
 public:
 	void Init();
 	void Cleanup();
 	void RenderFrame();
+
+private:
+	void RenderScene(vr::EVREye eye);
 };
 
 inline GlInstance& Gl()

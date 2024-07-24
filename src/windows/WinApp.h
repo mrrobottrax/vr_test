@@ -1,24 +1,7 @@
 #pragma once
 
 #include <gl/GlInstance.h>
-
-class Window
-{
-private:
-	int m_width;
-	int m_height;
-
-public:
-	HWND hWnd;
-
-	void Init(HINSTANCE hInstance, int width, int height);
-
-	int Width() const { return m_width; }
-	int Height() const { return m_height; }
-
-private:
-	static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-};
+#include "Window.h"
 
 class WinApp
 {
@@ -44,5 +27,5 @@ public:
 	void CreateConsole();
 	void DestroyConsole(bool pause = false);
 
-	Window& MainWindow() { return m_mainWindow; };
+	inline Window& MainWindow() { return m_mainWindow; };
 };

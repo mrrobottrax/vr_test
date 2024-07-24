@@ -2,13 +2,11 @@
 #include "GlInstance.h"
 #include <App.h>
 
-#ifdef GL_ASSERTS
-#define glAssertSkip(expr, expected) if (expr != expected) { throw std::runtime_error(std::format("GL expected {} got {:x} \nGL: {}", #expected, expr, (const char*)gluErrorString(glGetError()))); }
-#define glCheckErrors() if (glGetError()) { gluErrorString(glGetError()); }
-#else
-#define glAssertSkip(expr, expected)
-#define glCheckErrors()
-#endif // GL_ASSERTS
+float vertices[] = {
+	0, 0, 0,
+	0, 1, 0,
+	1, 1, 0
+};
 
 void GlInstance::Init()
 {
@@ -46,26 +44,24 @@ void GlInstance::Init()
 		throw std::runtime_error((const char*)glewGetErrorString(error));
 	}
 
-	// create frame buffer
-	glGenFramebuffers(1, &m_leftEyeFramebuffer);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_leftEyeFramebuffer);
+	// init render targets
+	m_leftEyeFramebuffer.Init();
+	m_rightEyeFramebuffer.Init();
 
-	// create render buffer
-	glGenRenderbuffers(1, &m_leftEyeRenderbuffer);
-	glBindRenderbuffer(GL_RENDERBUFFER, m_leftEyeRenderbuffer);
-	uint32_t width, height;
-	vr::VRSystem()->GetRecommendedRenderTargetSize(&width, &height);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB8, width, height);
+	// create vertex array
+	glGenVertexArrays(1, &m_vertexArray);
+	glBindVertexArray(m_vertexArray);
 
-	// bind the two
-	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, m_leftEyeRenderbuffer);
+	// create vertex buffer
+	glGenBuffers(1, &m_vertexBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	// check
-	glCheckErrors();
-	glAssertSkip(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER), GL_FRAMEBUFFER_COMPLETE);
+	// set vertex format
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+	glEnableVertexAttribArray(0);
 
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	glBindVertexArray(0);
 }
 
 void GlInstance::Cleanup()
@@ -75,39 +71,65 @@ void GlInstance::Cleanup()
 #endif // _WINDOWS
 }
 
+void GlInstance::RenderScene(vr::EVREye eye)
+{
+	// setup
+	RenderTarget& rt = eye == vr::Eye_Right ? m_rightEyeFramebuffer : m_leftEyeFramebuffer;
+
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rt.FramebufferName());
+	glViewport(0, 0, rt.Width(), rt.Height());
+
+	// clear
+	glClearColor(0, 1, 1, 1);
+	glClearDepth(1);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// get projection matrix
+	//vr::HmdMatrix44_t projLeft = vr::VRSystem()->GetProjectionMatrix(eye, 0.01f, 1000.0f);
+
+	// draw test triangle
+	glBindVertexArray(m_vertexArray);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glBindVertexArray(0);
+
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+}
+
 void GlInstance::RenderFrame()
 {
 	vr::TrackedDevicePose_t renderPose;
 	vr::VRCompositor()->WaitGetPoses(&renderPose, 1, nullptr, 0);
 
-	uint32_t width, height;
-	vr::VRSystem()->GetRecommendedRenderTargetSize(&width, &height);
+	RenderScene(vr::Eye_Left);
+	RenderScene(vr::Eye_Right);
 
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_leftEyeFramebuffer);
+	// submit textures
+	vr::Texture_t leftEye{};
+	leftEye.handle = (void*)(uintptr_t)m_leftEyeFramebuffer.RenderbufferName();
+	leftEye.eType = vr::TextureType_OpenGL;
+	leftEye.eColorSpace = vr::ColorSpace_Gamma;
 
-	glViewport(0, 0, width, height);
-	glClearColor(0, 1, 1, 1);
-	glClearDepth(1);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	vr::HmdMatrix44_t projLeft = vr::VRSystem()->GetProjectionMatrix(vr::Eye_Left, 0.01f, 1000.0f);
-
-	vr::Texture_t tex{};
-	tex.handle = (void*)(uintptr_t)m_leftEyeRenderbuffer;
-	tex.eType = vr::TextureType_OpenGL;
-	tex.eColorSpace = vr::ColorSpace_Gamma;
+	vr::Texture_t rightEye{};
+	rightEye.handle = (void*)(uintptr_t)m_rightEyeFramebuffer.RenderbufferName();
+	rightEye.eType = vr::TextureType_OpenGL;
+	rightEye.eColorSpace = vr::ColorSpace_Gamma;
 
 	// todo: profile rendering eyes on seperate rts and submitting at once, or sequencially on same rt
-	vr::VRCompositor()->Submit(vr::Eye_Left, &tex, nullptr, vr::Submit_GlRenderBuffer);
-	vr::VRCompositor()->Submit(vr::Eye_Right, &tex, nullptr, vr::Submit_GlRenderBuffer);
-
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	vr::VRCompositor()->Submit(vr::Eye_Left, &leftEye, nullptr, vr::Submit_GlRenderBuffer);
+	vr::VRCompositor()->Submit(vr::Eye_Right, &rightEye, nullptr, vr::Submit_GlRenderBuffer);
 
 	// copy to main window
-	// todo: pofile viewport
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_leftEyeFramebuffer);
+	// todo: pofile with/without viewport
+	//glViewport()
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_leftEyeFramebuffer.FramebufferName());
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	glBlitFramebuffer(0, 0, width, height, 0, 0, App().MainWindow().Width(), App().MainWindow().Height(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebuffer(
+		0, 0,
+		m_leftEyeFramebuffer.Width(), m_leftEyeFramebuffer.Height(),
+		0, 0,
+		App().MainWindow().Width(), App().MainWindow().Height(),
+		GL_COLOR_BUFFER_BIT, GL_NEAREST
+	);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 

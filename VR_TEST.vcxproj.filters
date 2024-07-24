@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\windows\win.cpp">
+    <ClCompile Include="src\windows\WinApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="thirdparty\glew-2.1.0\src\glew.c">
@@ -33,6 +33,12 @@
     <ClCompile Include="src\pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\windows\Window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gl\RenderTarget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\pch.h">
@@ -44,13 +50,22 @@
     <ClInclude Include="src\App.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\windows\win.h">
+    <ClInclude Include="src\windows\WinApp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\engine\EngineInstance.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\gl\GlInstance.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\windows\Window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gl\RenderTarget.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gl\GlDebug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
