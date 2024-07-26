@@ -20,7 +20,7 @@ public:
 	void RenderFrame();
 
 private:
-	void RenderScene(vr::EVREye eye);
+	void RenderScene(vr::EVREye eye, vr::TrackedDevicePose_t renderPose);
 };
 
 inline GlInstance& Gl()

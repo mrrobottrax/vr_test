@@ -6,9 +6,9 @@
 #include "ShaderProgram.h"
 
 float vertices[] = {
-	0, 0, 0,
-	0, 1, 0,
-	1, 1, 0
+	0, 0, -1,
+	0, 1, -1,
+	1, 1, -1
 };
 
 void GlInstance::Init()
@@ -66,8 +66,7 @@ void GlInstance::Init()
 
 	glBindVertexArray(0);
 
-	// create shaders
-
+	// create shader
 	const char *vertexShaderSource = FileManager::LoadResourceBytes(IDR_DEFAULT_VERT_SHADER, RCT_SHADER);
 	const char *fragmentShaderSource = FileManager::LoadResourceBytes(IDR_DEFAULT_FRAG_SHADER, RCT_SHADER);
 	m_fallbackShaderProgram.Compile(vertexShaderSource, fragmentShaderSource);
@@ -80,7 +79,7 @@ void GlInstance::Cleanup()
 #endif // _WINDOWS
 }
 
-void GlInstance::RenderScene(vr::EVREye eye)
+void GlInstance::RenderScene(vr::EVREye eye, vr::TrackedDevicePose_t renderPose)
 {
 	// setup
 	RenderTarget &rt = eye == vr::Eye_Right ? m_rightEyeFramebuffer : m_leftEyeFramebuffer;
@@ -93,10 +92,22 @@ void GlInstance::RenderScene(vr::EVREye eye)
 	glClearDepth(1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// get projection matrix
-	//vr::HmdMatrix44_t projLeft = vr::VRSystem()->GetProjectionMatrix(eye, 0.01f, 1000.0f);
-
 	glUseProgram(m_fallbackShaderProgram.Id());
+
+	// set view matrix
+	float(&mat)[3][4] = renderPose.mDeviceToAbsoluteTracking.m;
+	float viewMat[4][4] = {
+		{ mat[0][0], mat[0][1], mat[0][2], mat[0][3] },
+		{ mat[1][0], mat[1][1], mat[1][2], mat[1][3] },
+		{ mat[2][0], mat[2][1], mat[2][2], mat[2][3] },
+		{ 0, 0, 0, 1 },
+	};
+
+	glUniformMatrix4fv(1, 1, GL_FALSE, reinterpret_cast<float(&)[16]>(viewMat));
+
+	// set projection matrix
+	vr::HmdMatrix44_t proj = vr::VRSystem()->GetProjectionMatrix(eye, 0.01f, 1000.0f);
+	glUniformMatrix4fv(0, 1, GL_TRUE, reinterpret_cast<float(&)[16]>(proj.m));
 
 	// draw test triangle
 	glBindVertexArray(m_vertexArray);
@@ -112,8 +123,8 @@ void GlInstance::RenderFrame()
 	vr::TrackedDevicePose_t renderPose;
 	vr::VRCompositor()->WaitGetPoses(&renderPose, 1, nullptr, 0);
 
-	RenderScene(vr::Eye_Left);
-	RenderScene(vr::Eye_Right);
+	RenderScene(vr::Eye_Left, renderPose);
+	RenderScene(vr::Eye_Right, renderPose);
 
 	// submit textures
 	vr::Texture_t leftEye{};
