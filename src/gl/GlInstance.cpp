@@ -69,7 +69,7 @@ void GlInstance::Init()
 	// create shader
 	const char *vertexShaderSource = FileManager::LoadResourceBytes(IDR_DEFAULT_VERT_SHADER, RCT_SHADER);
 	const char *fragmentShaderSource = FileManager::LoadResourceBytes(IDR_DEFAULT_FRAG_SHADER, RCT_SHADER);
-	m_fallbackShaderProgram.Compile(vertexShaderSource, fragmentShaderSource);
+	m_fallbackShaderProgram.Compile(vertexShaderSource, fragmentShaderSource, "Default");
 }
 
 void GlInstance::Cleanup()
@@ -77,6 +77,78 @@ void GlInstance::Cleanup()
 #ifdef _WINDOWS
 	CoUninitialize();
 #endif // _WINDOWS
+}
+
+static vr::HmdMatrix44_t InvertMatrix(const vr::HmdMatrix34_t &matrix)
+{
+	vr::HmdMatrix44_t inverseMatrix{};
+
+	// right column is a freebie because bottom row is assumed 0, 0, 0, 1
+	inverseMatrix.m[0][3] = -matrix.m[0][3];
+	inverseMatrix.m[1][3] = -matrix.m[1][3];
+	inverseMatrix.m[2][3] = -matrix.m[2][3];
+
+	// solve the rest (3x3) using elimination / augmented matrix
+
+	float l[3][3]{}; 	// left side of augmented matrix
+	float(&r)[4][4] = inverseMatrix.m; // right side (only using 3x3 part)
+
+	// copy starting matrix to left side
+	for (int i = 0; i < 3; ++i)
+	{
+		for (int j = 0; j < 3; ++j)
+		{
+			l[i][j] = matrix.m[i][j];
+		}
+	}
+
+	// set right side diagonals to 1
+	for (int i = 0; i < 4; ++i)
+	{
+		r[i][i] = 1;
+	}
+
+	// use elimination to set column, rowB to 0 in left side
+	auto eliminate = [&l, &r] (int rowA, int rowB, int column) -> void
+		{
+			const float multiplier = l[rowB][column] / l[rowA][column];
+			for (int i = 0; i < 3; ++i)
+			{
+				l[rowB][i] -= l[rowA][i] * multiplier;
+				r[rowB][i] -= r[rowA][i] * multiplier;
+			}
+		};
+
+	// 1. use row 0 on row 1 to eliminate 1, 0
+	eliminate(0, 1, 0);
+	// 2. use row 0 on row 2 to eliminate 2, 0
+	eliminate(0, 2, 0);
+	// 3. use row 1 on row 2 to eliminate 2, 1
+	eliminate(1, 2, 1);
+
+	// 3x3 submatrix should now be an upper triangle matrix
+
+	// 4. use row 2 on row 1 to eliminate 1, 2
+	eliminate(2, 1, 2);
+	// 5. use row 2 on row 0 to eliminate 0, 2
+	eliminate(2, 0, 2);
+	// 6. use row 1 on row 0 to eliminate 0, 1
+	eliminate(1, 0, 1);
+
+	// matrix should now be diagonal only
+
+	// normalize each row
+	for (int i = 0; i < 3; ++i)
+	{
+		const float multiplier = 1.0f / l[i][i];
+		for (int j = 0; j < 3; ++j)
+		{
+			l[i][j] *= multiplier;
+			r[i][j] *= multiplier;
+		}
+	}
+
+	return inverseMatrix;
 }
 
 void GlInstance::RenderScene(vr::EVREye eye, vr::TrackedDevicePose_t renderPose)
@@ -94,20 +166,19 @@ void GlInstance::RenderScene(vr::EVREye eye, vr::TrackedDevicePose_t renderPose)
 
 	glUseProgram(m_fallbackShaderProgram.Id());
 
-	// set view matrix
-	float(&mat)[3][4] = renderPose.mDeviceToAbsoluteTracking.m;
-	float viewMat[4][4] = {
-		{ mat[0][0], mat[0][1], mat[0][2], mat[0][3] },
-		{ mat[1][0], mat[1][1], mat[1][2], mat[1][3] },
-		{ mat[2][0], mat[2][1], mat[2][2], mat[2][3] },
-		{ 0, 0, 0, 1 },
-	};
+	// set hmd matrix
+	const vr::HmdMatrix34_t &headToWorldMat = renderPose.mDeviceToAbsoluteTracking;
+	vr::HmdMatrix44_t worldToHeadMat = InvertMatrix(headToWorldMat);
+	glUniformMatrix4fv(2, 1, GL_TRUE, reinterpret_cast<float(&)[16]>(worldToHeadMat.m));
 
-	glUniformMatrix4fv(1, 1, GL_FALSE, reinterpret_cast<float(&)[16]>(viewMat));
+	// set eye pos matrix
+	const vr::HmdMatrix34_t &eyeToHeadMat = vr::VRSystem()->GetEyeToHeadTransform(eye);
+	vr::HmdMatrix44_t headToEyeMat = InvertMatrix(eyeToHeadMat);
+	glUniformMatrix4fv(1, 1, GL_TRUE, reinterpret_cast<float(&)[16]>(headToEyeMat.m));
 
 	// set projection matrix
-	vr::HmdMatrix44_t proj = vr::VRSystem()->GetProjectionMatrix(eye, 0.01f, 1000.0f);
-	glUniformMatrix4fv(0, 1, GL_TRUE, reinterpret_cast<float(&)[16]>(proj.m));
+	vr::HmdMatrix44_t projMat = vr::VRSystem()->GetProjectionMatrix(eye, 0.01f, 1000.0f);
+	glUniformMatrix4fv(0, 1, GL_TRUE, reinterpret_cast<float(&)[16]>(projMat.m));
 
 	// draw test triangle
 	glBindVertexArray(m_vertexArray);

@@ -80,7 +80,9 @@ int WINAPI wWinMain(
 	}
 	catch (const std::exception& err)
 	{
-		std::string s = std::string("Error: ") + std::string(err.what());
+		std::string s = std::string(err.what());
+
+		std::cout << s << std::endl;
 
 		std::wstring ws = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(s);
 		MessageBoxW(NULL, ws.c_str(), L"Error!", MB_ICONERROR | MB_OK);
