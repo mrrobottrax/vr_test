@@ -29,16 +29,38 @@ void GlInstance::Init()
 	pixelFormatDesc.nVersion = 1;
 	pixelFormatDesc.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL;
 	pixelFormatDesc.iPixelType = PFD_TYPE_RGBA;
-	pixelFormatDesc.cColorBits = 8;
+	pixelFormatDesc.cColorBits = 32;
 	pixelFormatDesc.cAlphaBits = 0;
 	pixelFormatDesc.cDepthBits = 0;
 
 	pixelFormat = ChoosePixelFormat(hdc, &pixelFormatDesc);
-	SetPixelFormat(hdc, pixelFormat, &pixelFormatDesc);
+	if (pixelFormat == 0)
+		throw std::runtime_error("Failed to get pixel format");
+
+	if (SetPixelFormat(hdc, pixelFormat, &pixelFormatDesc) == FALSE)
+		throw std::runtime_error("Failed to set pixel format");
+
+	// apparently windows wants you to do this after setting pixel format?
+	ReleaseDC(App().MainWindow().hWnd, hdc);
+	hdc = GetDC(App().MainWindow().hWnd);
 
 	HGLRC hlgrc = wglCreateContext(hdc);
 	wglMakeCurrent(hdc, hlgrc);
 #endif // _WINDOWS
+
+	// setup Dear ImGui
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO &io = ImGui::GetIO(); (void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;   // Enable Keyboard Controls
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;    // Enable Gamepad Controls
+
+	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsClassic();
+
+	// Setup Platform/Renderer backends
+	ImGui_ImplWin32_InitForOpenGL(App().MainWindow().hWnd);
+	ImGui_ImplOpenGL3_Init();
 
 	// initialize glew
 	GLenum error = glewInit();
@@ -67,86 +89,22 @@ void GlInstance::Init()
 	glBindVertexArray(0);
 
 	// create shader
-	const char *vertexShaderSource = FileManager::LoadResourceBytes(IDR_DEFAULT_VERT_SHADER, RCT_SHADER);
-	const char *fragmentShaderSource = FileManager::LoadResourceBytes(IDR_DEFAULT_FRAG_SHADER, RCT_SHADER);
+	const char *vertexShaderSource = FileManager::LoadResourceBytes(R_VSHADER_FALLBACK, RCT_SHADER);
+	const char *fragmentShaderSource = FileManager::LoadResourceBytes(R_FSHADER_FALLBACK, RCT_SHADER);
 	m_fallbackShaderProgram.Compile(vertexShaderSource, fragmentShaderSource, "Default");
 }
 
 void GlInstance::Cleanup()
 {
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+
 #ifdef _WINDOWS
 	CoUninitialize();
+	wglMakeCurrent(nullptr, nullptr);
+	ReleaseDC(App().MainWindow().hWnd, wglGetCurrentDC());
 #endif // _WINDOWS
-}
-
-static vr::HmdMatrix44_t InvertMatrixCOPILOTVERSION(const vr::HmdMatrix34_t &matrix)
-{
-	vr::HmdMatrix44_t inverseMatrix{};
-
-	// Convert the 3x4 matrix to a 4x4 matrix
-	for (int i = 0; i < 3; ++i)
-	{
-		for (int j = 0; j < 4; ++j)
-		{
-			inverseMatrix.m[i][j] = matrix.m[i][j];
-		}
-	}
-	inverseMatrix.m[3][0] = 0;
-	inverseMatrix.m[3][1] = 0;
-	inverseMatrix.m[3][2] = 0;
-	inverseMatrix.m[3][3] = 1;
-
-	// Invert the 4x4 matrix
-	for (int i = 0; i < 4; ++i)
-	{
-		// Find the maximum element in the current column
-		float maxEl = abs(inverseMatrix.m[i][i]);
-		int maxRow = i;
-		for (int k = i + 1; k < 4; ++k)
-		{
-			if (abs(inverseMatrix.m[k][i]) > maxEl)
-			{
-				maxEl = abs(inverseMatrix.m[k][i]);
-				maxRow = k;
-			}
-		}
-
-		// Swap maximum row with current row
-		for (int k = i; k < 4; ++k)
-		{
-			std::swap(inverseMatrix.m[maxRow][k], inverseMatrix.m[i][k]);
-		}
-
-		// Make all rows below this one 0 in current column
-		for (int k = i + 1; k < 4; ++k)
-		{
-			float c = -inverseMatrix.m[k][i] / inverseMatrix.m[i][i];
-			for (int j = i; j < 4; ++j)
-			{
-				if (i == j)
-				{
-					inverseMatrix.m[k][j] = 0;
-				}
-				else
-				{
-					inverseMatrix.m[k][j] += c * inverseMatrix.m[i][j];
-				}
-			}
-		}
-	}
-
-	// Solve equation Ax=b for an upper triangular matrix A
-	for (int i = 3; i >= 0; --i)
-	{
-		for (int k = i + 1; k < 4; ++k)
-		{
-			inverseMatrix.m[i][3] -= inverseMatrix.m[k][3] * inverseMatrix.m[i][k];
-		}
-		inverseMatrix.m[i][3] /= inverseMatrix.m[i][i];
-		inverseMatrix.m[i][i] = 1; // Set the diagonal element to 1
-	}
-
-	return inverseMatrix;
 }
 
 static vr::HmdMatrix44_t InvertMatrix(const vr::HmdMatrix34_t &matrix)
@@ -299,6 +257,18 @@ void GlInstance::RenderFrame()
 	);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
+	static bool showDemoWindow;
+	ImGui::ShowDemoWindow(&showDemoWindow);
+
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+	SwapBuffers(GetDC(App().MainWindow().hWnd));
 
 	glFinish();
 }

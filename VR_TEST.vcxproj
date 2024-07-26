@@ -50,7 +50,7 @@
       <PreprocessorDefinitions>GLEW_STATIC;WIN32;_WINDOWS;_DEBUG;GL_ASSERTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>.\;.\src;.\thirdparty\openvr\headers;.\thirdparty\glew-2.1.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;.\src;.\thirdparty\openvr\headers;.\thirdparty\dear-imgui\;.\thirdparty\glew-2.1.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4100;4996;6031;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -71,7 +71,7 @@
       <PreprocessorDefinitions>GLEW_STATIC;WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>.\;.\src;.\thirdparty\openvr\headers;.\thirdparty\glew-2.1.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;.\src;.\thirdparty\openvr\headers;.\thirdparty\dear-imgui\;.\thirdparty\glew-2.1.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4100;4996;6031;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -99,6 +99,34 @@
     <ClCompile Include="src\vr\VrInstance.cpp" />
     <ClCompile Include="src\windows\WinApp.cpp" />
     <ClCompile Include="src\windows\Window.cpp" />
+    <ClCompile Include="thirdparty\dear-imgui\backends\imgui_impl_opengl3.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="thirdparty\dear-imgui\backends\imgui_impl_win32.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="thirdparty\dear-imgui\imgui.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="thirdparty\dear-imgui\imgui_demo.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="thirdparty\dear-imgui\imgui_draw.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="thirdparty\dear-imgui\imgui_tables.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="thirdparty\dear-imgui\imgui_widgets.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="thirdparty\glew-2.1.0\src\glew.c">
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">TurnOffAllWarnings</WarningLevel>
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">TurnOffAllWarnings</WarningLevel>
@@ -119,17 +147,26 @@
     <ClInclude Include="src\files\FileManager.h" />
     <ClInclude Include="src\windows\WinApp.h" />
     <ClInclude Include="src\windows\Window.h" />
+    <ClInclude Include="thirdparty\dear-imgui\backends\imgui_impl_win32.h" />
+    <ClInclude Include="thirdparty\dear-imgui\imconfig.h" />
+    <ClInclude Include="thirdparty\dear-imgui\imgui.h" />
+    <ClInclude Include="thirdparty\dear-imgui\imgui_internal.h" />
+    <ClInclude Include="thirdparty\dear-imgui\imstb_rectpack.h" />
+    <ClInclude Include="thirdparty\dear-imgui\imstb_textedit.h" />
+    <ClInclude Include="thirdparty\dear-imgui\imstb_truetype.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="core\default.frag" />
     <None Include="core\default.vert" />
+    <None Include="core\fallback.frag" />
+    <None Include="core\fallback.vert" />
     <None Include="engine data\shader.vert" />
     <None Include="engine data\default.vert">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="core.rc" />
+    <ResourceCompile Include="VR_TEST.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

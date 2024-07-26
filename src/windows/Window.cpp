@@ -33,21 +33,46 @@ void Window::Init(HINSTANCE hInstance, int width, int height)
 		NULL,       // Parent window    
 		NULL,		// Menu
 		hInstance,  // Instance handle
-		NULL        // Additional application data
+		this        // Additional application data
 	);
 
 	ShowWindow(hWnd, 1);
 	UpdateWindow(hWnd);
 }
 
-LRESULT CALLBACK Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	if (ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam))
+		return true;
+
+	Window *pThis = reinterpret_cast<Window *>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+
 	switch (uMsg)
 	{
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		return 0;
+		case WM_NCCREATE:
+		{
+			LPCREATESTRUCT lpcs = reinterpret_cast<LPCREATESTRUCT>(lParam);
+			pThis = static_cast<Window *>(lpcs->lpCreateParams);
+
+			SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
+			break;
+		}
+		case WM_DESTROY:
+		{
+			PostQuitMessage(0);
+			return 0;
+		}
+		case WM_SIZE:
+		{
+			if (wParam != SIZE_MINIMIZED)
+			{
+				pThis->m_width = LOWORD(lParam);
+				pThis->m_height = HIWORD(lParam);
+			}
+			break;
+		}
 	}
 
-	return DefWindowProc(hwnd, uMsg, wParam, lParam);
+	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
