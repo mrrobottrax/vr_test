@@ -79,6 +79,76 @@ void GlInstance::Cleanup()
 #endif // _WINDOWS
 }
 
+static vr::HmdMatrix44_t InvertMatrixCOPILOTVERSION(const vr::HmdMatrix34_t &matrix)
+{
+	vr::HmdMatrix44_t inverseMatrix{};
+
+	// Convert the 3x4 matrix to a 4x4 matrix
+	for (int i = 0; i < 3; ++i)
+	{
+		for (int j = 0; j < 4; ++j)
+		{
+			inverseMatrix.m[i][j] = matrix.m[i][j];
+		}
+	}
+	inverseMatrix.m[3][0] = 0;
+	inverseMatrix.m[3][1] = 0;
+	inverseMatrix.m[3][2] = 0;
+	inverseMatrix.m[3][3] = 1;
+
+	// Invert the 4x4 matrix
+	for (int i = 0; i < 4; ++i)
+	{
+		// Find the maximum element in the current column
+		float maxEl = abs(inverseMatrix.m[i][i]);
+		int maxRow = i;
+		for (int k = i + 1; k < 4; ++k)
+		{
+			if (abs(inverseMatrix.m[k][i]) > maxEl)
+			{
+				maxEl = abs(inverseMatrix.m[k][i]);
+				maxRow = k;
+			}
+		}
+
+		// Swap maximum row with current row
+		for (int k = i; k < 4; ++k)
+		{
+			std::swap(inverseMatrix.m[maxRow][k], inverseMatrix.m[i][k]);
+		}
+
+		// Make all rows below this one 0 in current column
+		for (int k = i + 1; k < 4; ++k)
+		{
+			float c = -inverseMatrix.m[k][i] / inverseMatrix.m[i][i];
+			for (int j = i; j < 4; ++j)
+			{
+				if (i == j)
+				{
+					inverseMatrix.m[k][j] = 0;
+				}
+				else
+				{
+					inverseMatrix.m[k][j] += c * inverseMatrix.m[i][j];
+				}
+			}
+		}
+	}
+
+	// Solve equation Ax=b for an upper triangular matrix A
+	for (int i = 3; i >= 0; --i)
+	{
+		for (int k = i + 1; k < 4; ++k)
+		{
+			inverseMatrix.m[i][3] -= inverseMatrix.m[k][3] * inverseMatrix.m[i][k];
+		}
+		inverseMatrix.m[i][3] /= inverseMatrix.m[i][i];
+		inverseMatrix.m[i][i] = 1; // Set the diagonal element to 1
+	}
+
+	return inverseMatrix;
+}
+
 static vr::HmdMatrix44_t InvertMatrix(const vr::HmdMatrix34_t &matrix)
 {
 	vr::HmdMatrix44_t inverseMatrix{};
@@ -90,8 +160,8 @@ static vr::HmdMatrix44_t InvertMatrix(const vr::HmdMatrix34_t &matrix)
 
 	// solve the rest (3x3) using elimination / augmented matrix
 
-	float l[3][3]{}; 	// left side of augmented matrix
-	float(&r)[4][4] = inverseMatrix.m; // right side (only using 3x3 part)
+	float l[4][4]{}; 	// left side of augmented matrix
+	float(&r)[4][4] = inverseMatrix.m; // right side
 
 	// copy starting matrix to left side
 	for (int i = 0; i < 3; ++i)
@@ -100,7 +170,10 @@ static vr::HmdMatrix44_t InvertMatrix(const vr::HmdMatrix34_t &matrix)
 		{
 			l[i][j] = matrix.m[i][j];
 		}
+
+		l[i][3] = 0;
 	}
+	l[3][3] = 1;
 
 	// set right side diagonals to 1
 	for (int i = 0; i < 4; ++i)
@@ -112,14 +185,14 @@ static vr::HmdMatrix44_t InvertMatrix(const vr::HmdMatrix34_t &matrix)
 	auto eliminate = [&l, &r] (int rowA, int rowB, int column) -> void
 		{
 			const float multiplier = l[rowB][column] / l[rowA][column];
-			for (int i = 0; i < 3; ++i)
+			for (int i = 0; i < 4; ++i)
 			{
 				l[rowB][i] -= l[rowA][i] * multiplier;
 				r[rowB][i] -= r[rowA][i] * multiplier;
 			}
 		};
 
-	// 1. use row 0 on row 1 to eliminate 1, 0
+	// 1. use row 0 on row 1 to eliminate 1, 0 (row 1 minus a multiple of row 0)
 	eliminate(0, 1, 0);
 	// 2. use row 0 on row 2 to eliminate 2, 0
 	eliminate(0, 2, 0);
@@ -138,12 +211,12 @@ static vr::HmdMatrix44_t InvertMatrix(const vr::HmdMatrix34_t &matrix)
 	// matrix should now be diagonal only
 
 	// normalize each row
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < 3; ++i) // bottom row is already normal
 	{
 		const float multiplier = 1.0f / l[i][i];
-		for (int j = 0; j < 3; ++j)
+		for (int j = 0; j < 4; ++j)
 		{
-			l[i][j] *= multiplier;
+			//l[i][j] *= multiplier;
 			r[i][j] *= multiplier;
 		}
 	}
