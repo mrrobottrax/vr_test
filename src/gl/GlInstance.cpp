@@ -1,6 +1,9 @@
 #include <pch.h>
 #include "GlInstance.h"
 #include <App.h>
+#include <files/FileManager.h>
+#include "GlDebug.h"
+#include "ShaderProgram.h"
 
 float vertices[] = {
 	0, 0, 0,
@@ -41,7 +44,7 @@ void GlInstance::Init()
 	GLenum error = glewInit();
 	if (error != GLEW_OK)
 	{
-		throw std::runtime_error((const char*)glewGetErrorString(error));
+		throw std::runtime_error((const char *)glewGetErrorString(error));
 	}
 
 	// init render targets
@@ -62,6 +65,12 @@ void GlInstance::Init()
 	glEnableVertexAttribArray(0);
 
 	glBindVertexArray(0);
+
+	// create shaders
+
+	const char *vertexShaderSource = FileManager::LoadResourceBytes(IDR_DEFAULT_VERT_SHADER, RCT_SHADER);
+	const char *fragmentShaderSource = FileManager::LoadResourceBytes(IDR_DEFAULT_FRAG_SHADER, RCT_SHADER);
+	m_fallbackShaderProgram.Compile(vertexShaderSource, fragmentShaderSource);
 }
 
 void GlInstance::Cleanup()
@@ -74,7 +83,7 @@ void GlInstance::Cleanup()
 void GlInstance::RenderScene(vr::EVREye eye)
 {
 	// setup
-	RenderTarget& rt = eye == vr::Eye_Right ? m_rightEyeFramebuffer : m_leftEyeFramebuffer;
+	RenderTarget &rt = eye == vr::Eye_Right ? m_rightEyeFramebuffer : m_leftEyeFramebuffer;
 
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rt.FramebufferName());
 	glViewport(0, 0, rt.Width(), rt.Height());
@@ -87,11 +96,14 @@ void GlInstance::RenderScene(vr::EVREye eye)
 	// get projection matrix
 	//vr::HmdMatrix44_t projLeft = vr::VRSystem()->GetProjectionMatrix(eye, 0.01f, 1000.0f);
 
+	glUseProgram(m_fallbackShaderProgram.Id());
+
 	// draw test triangle
 	glBindVertexArray(m_vertexArray);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 	glBindVertexArray(0);
 
+	glUseProgram(0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
@@ -105,12 +117,12 @@ void GlInstance::RenderFrame()
 
 	// submit textures
 	vr::Texture_t leftEye{};
-	leftEye.handle = (void*)(uintptr_t)m_leftEyeFramebuffer.RenderbufferName();
+	leftEye.handle = (void *)(uintptr_t)m_leftEyeFramebuffer.RenderbufferName();
 	leftEye.eType = vr::TextureType_OpenGL;
 	leftEye.eColorSpace = vr::ColorSpace_Gamma;
 
 	vr::Texture_t rightEye{};
-	rightEye.handle = (void*)(uintptr_t)m_rightEyeFramebuffer.RenderbufferName();
+	rightEye.handle = (void *)(uintptr_t)m_rightEyeFramebuffer.RenderbufferName();
 	rightEye.eType = vr::TextureType_OpenGL;
 	rightEye.eColorSpace = vr::ColorSpace_Gamma;
 

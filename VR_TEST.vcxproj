@@ -50,7 +50,7 @@
       <PreprocessorDefinitions>GLEW_STATIC;WIN32;_WINDOWS;_DEBUG;GL_ASSERTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>.\src;.\thirdparty\openvr\headers;.\thirdparty\glew-2.1.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;.\src;.\thirdparty\openvr\headers;.\thirdparty\glew-2.1.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4100;4996;6031;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -71,7 +71,7 @@
       <PreprocessorDefinitions>GLEW_STATIC;WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>.\src;.\thirdparty\openvr\headers;.\thirdparty\glew-2.1.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;.\src;.\thirdparty\openvr\headers;.\thirdparty\glew-2.1.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4100;4996;6031;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -88,8 +88,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\engine\EngineInstance.cpp" />
+    <ClCompile Include="src\files\FileManager.cpp" />
     <ClCompile Include="src\gl\RenderTarget.cpp" />
     <ClCompile Include="src\gl\GlInstance.cpp" />
+    <ClCompile Include="src\gl\ShaderProgram.cpp" />
     <ClCompile Include="src\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -105,15 +107,29 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="resource.h" />
     <ClInclude Include="src\App.h" />
     <ClInclude Include="src\engine\EngineInstance.h" />
     <ClInclude Include="src\gl\RenderTarget.h" />
     <ClInclude Include="src\gl\GlDebug.h" />
     <ClInclude Include="src\gl\GlInstance.h" />
+    <ClInclude Include="src\gl\ShaderProgram.h" />
     <ClInclude Include="src\pch.h" />
     <ClInclude Include="src\vr\VrInstance.h" />
+    <ClInclude Include="src\files\FileManager.h" />
     <ClInclude Include="src\windows\WinApp.h" />
     <ClInclude Include="src\windows\Window.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="core\default.frag" />
+    <None Include="core\default.vert" />
+    <None Include="engine data\shader.vert" />
+    <None Include="engine data\default.vert">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="core.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

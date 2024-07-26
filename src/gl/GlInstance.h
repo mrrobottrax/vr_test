@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RenderTarget.h"
+#include "ShaderProgram.h"
 
 class GlInstance
 {
@@ -10,6 +11,8 @@ private:
 
 	GLuint m_vertexArray;
 	GLuint m_vertexBuffer;
+
+	ShaderProgram m_fallbackShaderProgram;
 
 public:
 	void Init();
