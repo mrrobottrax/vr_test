@@ -1,18 +1,17 @@
 project(VrTest VERSION 0.0)
 
-set(SOURCE_FILES "app/App.h" "app/App.cpp")
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD 20)
 
 if (WIN32)
-	add_executable(VrTest WIN32 ${SOURCE_FILES})
+	add_executable(VrTest WIN32 "app/App.h" "app/App.cpp" "engine/EngineInstance.h" "engine/EngineInstance.cpp" "gl/GlInstance.h" "gl/GlInstance.cpp")
 endif()
 
 target_link_libraries(VrTest PRIVATE SDL2main)
 target_link_libraries(VrTest PRIVATE SDL2-static)
+target_link_libraries(VrTest PRIVATE opengl32)
 
 target_include_directories(VrTest PRIVATE "")
-
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 target_compile_options(VrTest PRIVATE /W4 /WX)
 

@@ -1,18 +1,20 @@
 #pragma once
-
-#include "RenderTarget.h"
-#include "ShaderProgram.h"
+//
+//#include "RenderTarget.h"
+//#include "ShaderProgram.h"
 
 class GlInstance
 {
 private:
-	RenderTarget m_leftEyeFramebuffer;
-	RenderTarget m_rightEyeFramebuffer;
+	SDL_GLContext m_sdlGlContext;
 
-	GLuint m_vertexArray;
-	GLuint m_vertexBuffer;
+	//RenderTarget m_leftEyeFramebuffer;
+	//RenderTarget m_rightEyeFramebuffer;
 
-	ShaderProgram m_fallbackShaderProgram;
+	//GLuint m_vertexArray;
+	//GLuint m_vertexBuffer;
+
+	//ShaderProgram m_fallbackShaderProgram;
 
 public:
 	void Init();
@@ -20,7 +22,7 @@ public:
 	void RenderFrame();
 
 private:
-	void RenderScene(vr::EVREye eye, vr::TrackedDevicePose_t renderPose);
+	//void RenderScene(vr::EVREye eye, vr::TrackedDevicePose_t renderPose);
 };
 
 inline GlInstance& Gl()

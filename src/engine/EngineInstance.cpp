@@ -5,14 +5,14 @@
 
 void EngineInstance::Init()
 {
-	Vr().Init();
+	//Vr().Init();
 	Gl().Init();
 }
 
 void EngineInstance::Cleanup()
 {
 	Gl().Cleanup();
-	Vr().Cleanup();
+	//Vr().Cleanup();
 }
 
 void EngineInstance::Frame()

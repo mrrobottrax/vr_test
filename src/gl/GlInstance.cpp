@@ -1,9 +1,10 @@
 #include <pch.h>
 #include "GlInstance.h"
-#include <App.h>
-#include <files/FileManager.h>
-#include "GlDebug.h"
-#include "ShaderProgram.h"
+#include <app/App.h>
+#include <gl/GL.h>
+//#include <files/FileManager.h>
+//#include "GlDebug.h"
+//#include "ShaderProgram.h"
 
 float vertices[] = {
 	0, 0, -1,
@@ -14,142 +15,78 @@ float vertices[] = {
 void GlInstance::Init()
 {
 
-#ifdef _WINDOWS
-	// initialize windows gl
-	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+//#ifdef _WINDOWS
+//	// initialize windows gl
+//	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+//
+//	HDC hdc = GetDC(App().MainWindow().hWnd);
+//
+//	int pixelFormat;
+//	PIXELFORMATDESCRIPTOR pixelFormatDesc;
+//
+//	/* initialize bits to 0 */
+//	memset(&pixelFormatDesc, 0, sizeof(PIXELFORMATDESCRIPTOR));
+//	pixelFormatDesc.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+//	pixelFormatDesc.nVersion = 1;
+//	pixelFormatDesc.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL;
+//	pixelFormatDesc.iPixelType = PFD_TYPE_RGBA;
+//	pixelFormatDesc.cColorBits = 8;
+//	pixelFormatDesc.cAlphaBits = 0;
+//	pixelFormatDesc.cDepthBits = 0;
+//
+//	pixelFormat = ChoosePixelFormat(hdc, &pixelFormatDesc);
+//	SetPixelFormat(hdc, pixelFormat, &pixelFormatDesc);
+//
+//	HGLRC hlgrc = wglCreateContext(hdc);
+//	wglMakeCurrent(hdc, hlgrc);
+//#endif // _WINDOWS
+//
+//	// initialize glew
+//	GLenum error = glewInit();
+//	if (error != GLEW_OK)
+//	{
+//		throw std::runtime_error((const char *)glewGetErrorString(error));
+//	}
+//
+//	// init render targets
+//	m_leftEyeFramebuffer.Init();
+//	m_rightEyeFramebuffer.Init();
+//
+//	// create vertex array
+//	glGenVertexArrays(1, &m_vertexArray);
+//	glBindVertexArray(m_vertexArray);
+//
+//	// create vertex buffer
+//	glGenBuffers(1, &m_vertexBuffer);
+//	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+//	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+//
+//	// set vertex format
+//	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+//	glEnableVertexAttribArray(0);
+//
+//	glBindVertexArray(0);
+//
+//	// create shader
+//	const char *vertexShaderSource = FileManager::LoadResourceBytes(IDR_DEFAULT_VERT_SHADER, RCT_SHADER);
+//	const char *fragmentShaderSource = FileManager::LoadResourceBytes(IDR_DEFAULT_FRAG_SHADER, RCT_SHADER);
+//	m_fallbackShaderProgram.Compile(vertexShaderSource, fragmentShaderSource, "Default");
 
-	HDC hdc = GetDC(App().MainWindow().hWnd);
-
-	int pixelFormat;
-	PIXELFORMATDESCRIPTOR pixelFormatDesc;
-
-	/* initialize bits to 0 */
-	memset(&pixelFormatDesc, 0, sizeof(PIXELFORMATDESCRIPTOR));
-	pixelFormatDesc.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-	pixelFormatDesc.nVersion = 1;
-	pixelFormatDesc.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL;
-	pixelFormatDesc.iPixelType = PFD_TYPE_RGBA;
-	pixelFormatDesc.cColorBits = 8;
-	pixelFormatDesc.cAlphaBits = 0;
-	pixelFormatDesc.cDepthBits = 0;
-
-	pixelFormat = ChoosePixelFormat(hdc, &pixelFormatDesc);
-	SetPixelFormat(hdc, pixelFormat, &pixelFormatDesc);
-
-	HGLRC hlgrc = wglCreateContext(hdc);
-	wglMakeCurrent(hdc, hlgrc);
-#endif // _WINDOWS
-
-	// initialize glew
-	GLenum error = glewInit();
-	if (error != GLEW_OK)
+	m_sdlGlContext = SDL_GL_CreateContext(App().MainWindow());
+	if (m_sdlGlContext == nullptr)
 	{
-		throw std::runtime_error((const char *)glewGetErrorString(error));
+		throw std::runtime_error(std::format("SDL_GL_CreateContext failed {}", SDL_GetError()));
 	}
 
-	// init render targets
-	m_leftEyeFramebuffer.Init();
-	m_rightEyeFramebuffer.Init();
-
-	// create vertex array
-	glGenVertexArrays(1, &m_vertexArray);
-	glBindVertexArray(m_vertexArray);
-
-	// create vertex buffer
-	glGenBuffers(1, &m_vertexBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	// set vertex format
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-	glEnableVertexAttribArray(0);
-
-	glBindVertexArray(0);
-
-	// create shader
-	const char *vertexShaderSource = FileManager::LoadResourceBytes(IDR_DEFAULT_VERT_SHADER, RCT_SHADER);
-	const char *fragmentShaderSource = FileManager::LoadResourceBytes(IDR_DEFAULT_FRAG_SHADER, RCT_SHADER);
-	m_fallbackShaderProgram.Compile(vertexShaderSource, fragmentShaderSource, "Default");
+	SDL_GL_MakeCurrent(App().MainWindow(), m_sdlGlContext);
 }
 
 void GlInstance::Cleanup()
 {
-#ifdef _WINDOWS
-	CoUninitialize();
-#endif // _WINDOWS
+	SDL_GL_DeleteContext(m_sdlGlContext);
 }
 
-static vr::HmdMatrix44_t InvertMatrixCOPILOTVERSION(const vr::HmdMatrix34_t &matrix)
-{
-	vr::HmdMatrix44_t inverseMatrix{};
-
-	// Convert the 3x4 matrix to a 4x4 matrix
-	for (int i = 0; i < 3; ++i)
-	{
-		for (int j = 0; j < 4; ++j)
-		{
-			inverseMatrix.m[i][j] = matrix.m[i][j];
-		}
-	}
-	inverseMatrix.m[3][0] = 0;
-	inverseMatrix.m[3][1] = 0;
-	inverseMatrix.m[3][2] = 0;
-	inverseMatrix.m[3][3] = 1;
-
-	// Invert the 4x4 matrix
-	for (int i = 0; i < 4; ++i)
-	{
-		// Find the maximum element in the current column
-		float maxEl = abs(inverseMatrix.m[i][i]);
-		int maxRow = i;
-		for (int k = i + 1; k < 4; ++k)
-		{
-			if (abs(inverseMatrix.m[k][i]) > maxEl)
-			{
-				maxEl = abs(inverseMatrix.m[k][i]);
-				maxRow = k;
-			}
-		}
-
-		// Swap maximum row with current row
-		for (int k = i; k < 4; ++k)
-		{
-			std::swap(inverseMatrix.m[maxRow][k], inverseMatrix.m[i][k]);
-		}
-
-		// Make all rows below this one 0 in current column
-		for (int k = i + 1; k < 4; ++k)
-		{
-			float c = -inverseMatrix.m[k][i] / inverseMatrix.m[i][i];
-			for (int j = i; j < 4; ++j)
-			{
-				if (i == j)
-				{
-					inverseMatrix.m[k][j] = 0;
-				}
-				else
-				{
-					inverseMatrix.m[k][j] += c * inverseMatrix.m[i][j];
-				}
-			}
-		}
-	}
-
-	// Solve equation Ax=b for an upper triangular matrix A
-	for (int i = 3; i >= 0; --i)
-	{
-		for (int k = i + 1; k < 4; ++k)
-		{
-			inverseMatrix.m[i][3] -= inverseMatrix.m[k][3] * inverseMatrix.m[i][k];
-		}
-		inverseMatrix.m[i][3] /= inverseMatrix.m[i][i];
-		inverseMatrix.m[i][i] = 1; // Set the diagonal element to 1
-	}
-
-	return inverseMatrix;
-}
-
-static vr::HmdMatrix44_t InvertMatrix(const vr::HmdMatrix34_t &matrix)
+/*static vr::HmdMatrix44_t InvertMatrix(const vr::HmdMatrix34_t &matrix)
 {
 	vr::HmdMatrix44_t inverseMatrix{};
 
@@ -222,9 +159,9 @@ static vr::HmdMatrix44_t InvertMatrix(const vr::HmdMatrix34_t &matrix)
 	}
 
 	return inverseMatrix;
-}
+}*/
 
-void GlInstance::RenderScene(vr::EVREye eye, vr::TrackedDevicePose_t renderPose)
+/*void GlInstance::RenderScene(vr::EVREye eye, vr::TrackedDevicePose_t renderPose)
 {
 	// setup
 	RenderTarget &rt = eye == vr::Eye_Right ? m_rightEyeFramebuffer : m_leftEyeFramebuffer;
@@ -260,11 +197,11 @@ void GlInstance::RenderScene(vr::EVREye eye, vr::TrackedDevicePose_t renderPose)
 
 	glUseProgram(0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-}
+}*/
 
 void GlInstance::RenderFrame()
 {
-	vr::TrackedDevicePose_t renderPose;
+	/*vr::TrackedDevicePose_t renderPose;
 	vr::VRCompositor()->WaitGetPoses(&renderPose, 1, nullptr, 0);
 
 	RenderScene(vr::Eye_Left, renderPose);
@@ -300,5 +237,16 @@ void GlInstance::RenderFrame()
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
+	glFinish();*/
+
+	int width, height;
+	SDL_GetWindowSize(App().MainWindow(), &width, &height);
+	glViewport(0, 0, width, height);
+
+	glClearColor(0, 1, 1, 1);
+	glClearDepth(1);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	SDL_GL_SwapWindow(App().MainWindow());
 	glFinish();
 }

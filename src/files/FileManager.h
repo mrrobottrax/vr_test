@@ -1,11 +1,11 @@
 #pragma once
 
-// so we get the ids
-#ifdef _WINDOWS
-#include <resource.h>
-#endif // _WINDOWS
-
-constexpr auto RCT_SHADER = L"Shader";
+//// so we get the ids
+//#ifdef _WINDOWS
+//#include <resource.h>
+//#endif // _WINDOWS
+//
+//constexpr auto RCT_SHADER = L"Shader";
 
 class FileManager
 {
