@@ -1,2 +1,4 @@
 /out/
+
+# make sure to add folders for more IDEs and such
 /.vs/
