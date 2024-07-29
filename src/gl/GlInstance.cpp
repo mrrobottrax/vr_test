@@ -1,7 +1,6 @@
 #include <pch.h>
 #include "GlInstance.h"
 #include <app/App.h>
-#include <gl/GL.h>
 //#include <files/FileManager.h>
 //#include "GlDebug.h"
 //#include "ShaderProgram.h"
@@ -79,6 +78,8 @@ void GlInstance::Init()
 	}
 
 	SDL_GL_MakeCurrent(App().MainWindow(), m_sdlGlContext);
+
+	gladLoadGLLoader(SDL_GL_GetProcAddress);
 }
 
 void GlInstance::Cleanup()

@@ -10,14 +10,12 @@
 #endif
 
 #include "SDL2/SDL.h"
+#include <glad/glad.h>
+
 
 //#include <openvr.h>
 
-//#include <GL/glew.h>
-//#include <GL/wglew.h>
-
 #include <iostream>
-#include <combaseapi.h>
 #include <locale>
 #include <codecvt>
 #include <string>

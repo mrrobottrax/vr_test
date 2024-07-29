@@ -4,3 +4,5 @@ set(SDL2_DISABLE_UNINSTALL ON)
 set(SDL_TEST OFF)
 set(SDL_LIBC ON)
 add_subdirectory(SDL EXCLUDE_FROM_ALL)
+
+add_subdirectory(glad EXCLUDE_FROM_ALL)
