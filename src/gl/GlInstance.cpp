@@ -13,64 +13,6 @@ float vertices[] = {
 
 void GlInstance::Init(SDL_Window *pWindow)
 {
-
-	//#ifdef _WINDOWS
-	//	// initialize windows gl
-	//	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
-	//
-	//	HDC hdc = GetDC(App().MainWindow().hWnd);
-	//
-	//	int pixelFormat;
-	//	PIXELFORMATDESCRIPTOR pixelFormatDesc;
-	//
-	//	/* initialize bits to 0 */
-	//	memset(&pixelFormatDesc, 0, sizeof(PIXELFORMATDESCRIPTOR));
-	//	pixelFormatDesc.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-	//	pixelFormatDesc.nVersion = 1;
-	//	pixelFormatDesc.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL;
-	//	pixelFormatDesc.iPixelType = PFD_TYPE_RGBA;
-	//	pixelFormatDesc.cColorBits = 8;
-	//	pixelFormatDesc.cAlphaBits = 0;
-	//	pixelFormatDesc.cDepthBits = 0;
-	//
-	//	pixelFormat = ChoosePixelFormat(hdc, &pixelFormatDesc);
-	//	SetPixelFormat(hdc, pixelFormat, &pixelFormatDesc);
-	//
-	//	HGLRC hlgrc = wglCreateContext(hdc);
-	//	wglMakeCurrent(hdc, hlgrc);
-	//#endif // _WINDOWS
-	//
-	//	// initialize glew
-	//	GLenum error = glewInit();
-	//	if (error != GLEW_OK)
-	//	{
-	//		throw std::runtime_error((const char *)glewGetErrorString(error));
-	//	}
-	//
-	//	// init render targets
-	//	m_leftEyeFramebuffer.Init();
-	//	m_rightEyeFramebuffer.Init();
-	//
-	//	// create vertex array
-	//	glGenVertexArrays(1, &m_vertexArray);
-	//	glBindVertexArray(m_vertexArray);
-	//
-	//	// create vertex buffer
-	//	glGenBuffers(1, &m_vertexBuffer);
-	//	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
-	//	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	//
-	//	// set vertex format
-	//	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-	//	glEnableVertexAttribArray(0);
-	//
-	//	glBindVertexArray(0);
-	//
-	//	// create shader
-	//	const char *vertexShaderSource = FileManager::LoadResourceBytes(IDR_DEFAULT_VERT_SHADER, RCT_SHADER);
-	//	const char *fragmentShaderSource = FileManager::LoadResourceBytes(IDR_DEFAULT_FRAG_SHADER, RCT_SHADER);
-	//	m_fallbackShaderProgram.Compile(vertexShaderSource, fragmentShaderSource, "Default");
-
 	const char *glsl_version = "#version 150";
 
 	// sdl settings
@@ -119,6 +61,32 @@ void GlInstance::Init(SDL_Window *pWindow)
 
 	ImGui_ImplSDL2_InitForOpenGL(pWindow, m_sdlGlContext);
 	ImGui_ImplOpenGL3_Init(glsl_version);
+
+	// init gl stuff
+
+	//// init render targets
+	//m_leftEyeFramebuffer.Init();
+	//m_rightEyeFramebuffer.Init();
+
+	//// create vertex array
+	//glGenVertexArrays(1, &m_vertexArray);
+	//glBindVertexArray(m_vertexArray);
+
+	//// create vertex buffer
+	//glGenBuffers(1, &m_vertexBuffer);
+	//glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	//// set vertex format
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+	//glEnableVertexAttribArray(0);
+
+	//glBindVertexArray(0);
+
+	//// create shader
+	//const char *vertexShaderSource = FileManager::LoadResourceBytes(IDR_DEFAULT_VERT_SHADER, RCT_SHADER);
+	//const char *fragmentShaderSource = FileManager::LoadResourceBytes(IDR_DEFAULT_FRAG_SHADER, RCT_SHADER);
+	//m_fallbackShaderProgram.Compile(vertexShaderSource, fragmentShaderSource, "Default");
 }
 
 void GlInstance::Cleanup()

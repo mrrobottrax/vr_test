@@ -10,7 +10,7 @@ void VrInstance::Init()
 
 	if (error != vr::VRInitError_None)
 	{
-		throw std::runtime_error(std::format("failed to init vr: {:x}", (uint32_t)error));
+		throw std::runtime_error(std::format("failed to init vr: code {}", (uint32_t)error));
 	}
 }
 
