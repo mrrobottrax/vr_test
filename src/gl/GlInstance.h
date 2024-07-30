@@ -7,6 +7,7 @@ class GlInstance
 {
 private:
 	SDL_GLContext m_sdlGlContext;
+	ImGuiContext *m_pImguiContext;
 
 	//RenderTarget m_leftEyeFramebuffer;
 	//RenderTarget m_rightEyeFramebuffer;
@@ -17,7 +18,7 @@ private:
 	//ShaderProgram m_fallbackShaderProgram;
 
 public:
-	void Init();
+	void Init(SDL_Window *pWindow);
 	void Cleanup();
 	void RenderFrame();
 
@@ -25,7 +26,7 @@ private:
 	//void RenderScene(vr::EVREye eye, vr::TrackedDevicePose_t renderPose);
 };
 
-inline GlInstance& Gl()
+inline GlInstance &Gl()
 {
 	static GlInstance gl;
 	return gl;

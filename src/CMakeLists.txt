@@ -9,8 +9,8 @@ endif()
 
 target_link_libraries(VrTest PRIVATE SDL2main)
 target_link_libraries(VrTest PRIVATE SDL2-static)
-#target_link_libraries(VrTest PRIVATE opengl32)
 target_link_libraries(VrTest PRIVATE glad)
+target_link_libraries(VrTest PRIVATE imgui)
 
 target_include_directories(VrTest PRIVATE "")
 
