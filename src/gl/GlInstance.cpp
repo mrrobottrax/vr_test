@@ -1,9 +1,8 @@
 #include <pch.h>
-#include "GlInstance.h"
 #include <app/App.h>
-//#include <files/FileManager.h>
-//#include "GlDebug.h"
-//#include "ShaderProgram.h"
+#include "GlDebug.h"
+#include "GlInstance.h"
+#include "ShaderProgram.h"
 
 float vertices[] = {
 	0, 0, -1,
@@ -64,29 +63,31 @@ void GlInstance::Init(SDL_Window *pWindow)
 
 	// init gl stuff
 
-	//// init render targets
-	//m_leftEyeFramebuffer.Init();
-	//m_rightEyeFramebuffer.Init();
+	// init render targets
+	m_leftEyeFramebuffer.Init();
+	m_rightEyeFramebuffer.Init();
 
-	//// create vertex array
-	//glGenVertexArrays(1, &m_vertexArray);
-	//glBindVertexArray(m_vertexArray);
+	// create vertex array
+	glGenVertexArrays(1, &m_vertexArray);
+	glBindVertexArray(m_vertexArray);
 
-	//// create vertex buffer
-	//glGenBuffers(1, &m_vertexBuffer);
-	//glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
-	//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	// create vertex buffer
+	glGenBuffers(1, &m_vertexBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	//// set vertex format
-	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-	//glEnableVertexAttribArray(0);
+	// set vertex format
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+	glEnableVertexAttribArray(0);
 
-	//glBindVertexArray(0);
+	glBindVertexArray(0);
 
-	//// create shader
-	//const char *vertexShaderSource = FileManager::LoadResourceBytes(IDR_DEFAULT_VERT_SHADER, RCT_SHADER);
-	//const char *fragmentShaderSource = FileManager::LoadResourceBytes(IDR_DEFAULT_FRAG_SHADER, RCT_SHADER);
-	//m_fallbackShaderProgram.Compile(vertexShaderSource, fragmentShaderSource, "Default");
+	// create shader
+	const void *vertexShaderSource = SDL_LoadFile("core/fallback.vert", nullptr);
+	const void *fragmentShaderSource = SDL_LoadFile("core/fallback.frag", nullptr);
+	m_fallbackShaderProgram.Compile(vertexShaderSource, fragmentShaderSource, "Default");
+	delete[] vertexShaderSource;
+	delete[] fragmentShaderSource;
 }
 
 void GlInstance::Cleanup()
@@ -97,7 +98,7 @@ void GlInstance::Cleanup()
 	SDL_GL_DeleteContext(m_sdlGlContext);
 }
 
-/*static vr::HmdMatrix44_t InvertMatrix(const vr::HmdMatrix34_t &matrix)
+static vr::HmdMatrix44_t InvertMatrix(const vr::HmdMatrix34_t &matrix)
 {
 	vr::HmdMatrix44_t inverseMatrix{};
 
@@ -170,9 +171,9 @@ void GlInstance::Cleanup()
 	}
 
 	return inverseMatrix;
-}*/
+}
 
-/*void GlInstance::RenderScene(vr::EVREye eye, vr::TrackedDevicePose_t renderPose)
+void GlInstance::RenderScene(vr::EVREye eye, vr::TrackedDevicePose_t renderPose)
 {
 	// setup
 	RenderTarget &rt = eye == vr::Eye_Right ? m_rightEyeFramebuffer : m_leftEyeFramebuffer;
@@ -208,11 +209,11 @@ void GlInstance::Cleanup()
 
 	glUseProgram(0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-}*/
+}
 
 void GlInstance::RenderFrame()
 {
-	/*vr::TrackedDevicePose_t renderPose;
+	vr::TrackedDevicePose_t renderPose;
 	vr::VRCompositor()->WaitGetPoses(&renderPose, 1, nullptr, 0);
 
 	RenderScene(vr::Eye_Left, renderPose);
@@ -234,21 +235,21 @@ void GlInstance::RenderFrame()
 	vr::VRCompositor()->Submit(vr::Eye_Right, &rightEye, nullptr, vr::Submit_GlRenderBuffer);
 
 	// copy to main window
-	// todo: pofile with/without viewport
-	//glViewport()
+	int width, height;
+	SDL_GL_GetDrawableSize(App().MainWindow(), &width, &height);
+
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_leftEyeFramebuffer.FramebufferName());
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
 	glBlitFramebuffer(
 		0, 0,
 		m_leftEyeFramebuffer.Width(), m_leftEyeFramebuffer.Height(),
 		0, 0,
-		App().MainWindow().Width(), App().MainWindow().Height(),
+		width, height,
 		GL_COLOR_BUFFER_BIT, GL_NEAREST
 	);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
-	glFinish();*/
 
 	// imgui
 	ImGui_ImplOpenGL3_NewFrame();
@@ -258,15 +259,6 @@ void GlInstance::RenderFrame()
 	ImGui::ShowDemoWindow();
 
 	ImGui::Render();
-
-	// clear
-	int width, height;
-	SDL_GL_GetDrawableSize(App().MainWindow(), &width, &height);
-	glViewport(0, 0, width, height);
-
-	glClearColor(0, 1, 1, 1);
-	glClearDepth(1);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// draw imgui
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

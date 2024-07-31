@@ -9,4 +9,5 @@ add_subdirectory(glad EXCLUDE_FROM_ALL)
 
 add_subdirectory(imgui EXCLUDE_FROM_ALL)
 
+set(BUILD_UNIVERSAL OFF)
 add_subdirectory(openvr EXCLUDE_FROM_ALL)

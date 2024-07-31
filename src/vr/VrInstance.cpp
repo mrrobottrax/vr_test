@@ -6,6 +6,11 @@ void VrInstance::Init()
 	vr::EVRInitError error;
 	vr::EVRApplicationType appType = vr::VRApplication_Scene;
 
+	if (!vr::VR_IsHmdPresent())
+	{
+		throw std::runtime_error("VR HMD not detected, unable to start.");
+	}
+
 	vr::VR_Init(&error, appType);
 
 	if (error != vr::VRInitError_None)
