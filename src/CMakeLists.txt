@@ -3,8 +3,13 @@ project(VrTest VERSION 0.0)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_STANDARD 20)
 
+set(SOURCE_FILES "pch.h" "app/App.h" "app/App.cpp" "engine/EngineInstance.h" "engine/EngineInstance.cpp" "gl/GlInstance.h" "gl/GlInstance.cpp" "gl/RenderTarget.h" "gl/RenderTarget.cpp" "gl/ShaderProgram.h" "gl/ShaderProgram.cpp" "vr/VrInstance.h" "vr/VrInstance.cpp")
+
+# todo: add different platforms
 if (WIN32)
-	add_executable(VrTest WIN32 "pch.h" "app/App.h" "app/App.cpp" "engine/EngineInstance.h" "engine/EngineInstance.cpp" "gl/GlInstance.h" "gl/GlInstance.cpp" "gl/RenderTarget.h" "gl/RenderTarget.cpp" "gl/ShaderProgram.h" "gl/ShaderProgram.cpp" "vr/VrInstance.h" "vr/VrInstance.cpp")
+	add_executable(VrTest WIN32 ${SOURCE_FILES})
+else
+    add_executable(VrTest ${SOURCE_FILES})
 endif()
 
 target_link_libraries(VrTest PRIVATE SDL2main)
