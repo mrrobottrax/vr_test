@@ -1,8 +1,7 @@
 #include <pch.h>
-#include "GlInstance.h"
-#include <App.h>
-#include <files/FileManager.h>
+#include <app/App.h>
 #include "GlDebug.h"
+#include "GlInstance.h"
 #include "ShaderProgram.h"
 
 float vertices[] = {
@@ -11,63 +10,58 @@ float vertices[] = {
 	1, 1, -1
 };
 
-void GlInstance::Init()
+void GlInstance::Init(SDL_Window *pWindow)
 {
+	const char *glsl_version = "#version 150";
 
-#ifdef _WINDOWS
-	// initialize windows gl
-	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+	// sdl settings
 
-	HDC hdc = GetDC(App().MainWindow().hWnd);
+	int contextFlags = 0;
+	contextFlags |= SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG;
 
-	int pixelFormat;
-	PIXELFORMATDESCRIPTOR pixelFormatDesc;
+#ifdef _DEBUG
+	contextFlags |= SDL_GL_CONTEXT_DEBUG_FLAG;
+#endif // _DEBUG
 
-	/* initialize bits to 0 */
-	memset(&pixelFormatDesc, 0, sizeof(PIXELFORMATDESCRIPTOR));
-	pixelFormatDesc.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-	pixelFormatDesc.nVersion = 1;
-	pixelFormatDesc.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL;
-	pixelFormatDesc.iPixelType = PFD_TYPE_RGBA;
-	pixelFormatDesc.cColorBits = 32;
-	pixelFormatDesc.cAlphaBits = 0;
-	pixelFormatDesc.cDepthBits = 0;
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, contextFlags); // always required on Mac
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 
-	pixelFormat = ChoosePixelFormat(hdc, &pixelFormatDesc);
-	if (pixelFormat == 0)
-		throw std::runtime_error("Failed to get pixel format");
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
 
-	if (SetPixelFormat(hdc, pixelFormat, &pixelFormatDesc) == FALSE)
-		throw std::runtime_error("Failed to set pixel format");
+	// sdl init
 
-	// apparently windows wants you to do this after setting pixel format?
-	ReleaseDC(App().MainWindow().hWnd, hdc);
-	hdc = GetDC(App().MainWindow().hWnd);
+	m_sdlGlContext = SDL_GL_CreateContext(pWindow);
+	if (m_sdlGlContext == nullptr)
+	{
+		throw std::runtime_error(std::format("SDL_GL_CreateContext failed {}", SDL_GetError()));
+	}
 
-	HGLRC hlgrc = wglCreateContext(hdc);
-	wglMakeCurrent(hdc, hlgrc);
-#endif // _WINDOWS
+	SDL_GL_MakeCurrent(pWindow, m_sdlGlContext);
+	SDL_GL_SetSwapInterval(1); // vsync
 
-	// setup Dear ImGui
+	// glad
+	gladLoadGLLoader(SDL_GL_GetProcAddress);
+
+	// IMGUI
 	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
+	m_pImguiContext = ImGui::CreateContext();
 	ImGuiIO &io = ImGui::GetIO(); (void)io;
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;   // Enable Keyboard Controls
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;    // Enable Gamepad Controls
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
 	ImGui::StyleColorsDark();
-	//ImGui::StyleColorsClassic();
 
-	// Setup Platform/Renderer backends
-	ImGui_ImplWin32_InitForOpenGL(App().MainWindow().hWnd);
-	ImGui_ImplOpenGL3_Init();
+	ImGui_ImplSDL2_InitForOpenGL(pWindow, m_sdlGlContext);
+	ImGui_ImplOpenGL3_Init(glsl_version);
 
-	// initialize glew
-	GLenum error = glewInit();
-	if (error != GLEW_OK)
-	{
-		throw std::runtime_error((const char *)glewGetErrorString(error));
-	}
+	// init gl stuff
 
 	// init render targets
 	m_leftEyeFramebuffer.Init();
@@ -89,22 +83,19 @@ void GlInstance::Init()
 	glBindVertexArray(0);
 
 	// create shader
-	const char *vertexShaderSource = FileManager::LoadResourceBytes(R_VSHADER_FALLBACK, RCT_SHADER);
-	const char *fragmentShaderSource = FileManager::LoadResourceBytes(R_FSHADER_FALLBACK, RCT_SHADER);
+	const void *vertexShaderSource = SDL_LoadFile("core/fallback.vert", nullptr);
+	const void *fragmentShaderSource = SDL_LoadFile("core/fallback.frag", nullptr);
 	m_fallbackShaderProgram.Compile(vertexShaderSource, fragmentShaderSource, "Default");
+	delete[] vertexShaderSource;
+	delete[] fragmentShaderSource;
 }
 
 void GlInstance::Cleanup()
 {
 	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplWin32_Shutdown();
+	ImGui_ImplSDL2_Shutdown();
 	ImGui::DestroyContext();
-
-#ifdef _WINDOWS
-	CoUninitialize();
-	wglMakeCurrent(nullptr, nullptr);
-	ReleaseDC(App().MainWindow().hWnd, wglGetCurrentDC());
-#endif // _WINDOWS
+	SDL_GL_DeleteContext(m_sdlGlContext);
 }
 
 static vr::HmdMatrix44_t InvertMatrix(const vr::HmdMatrix34_t &matrix)
@@ -244,31 +235,35 @@ void GlInstance::RenderFrame()
 	vr::VRCompositor()->Submit(vr::Eye_Right, &rightEye, nullptr, vr::Submit_GlRenderBuffer);
 
 	// copy to main window
-	// todo: pofile with/without viewport
-	//glViewport()
+	int width, height;
+	SDL_GL_GetDrawableSize(App().MainWindow(), &width, &height);
+
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_leftEyeFramebuffer.FramebufferName());
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
 	glBlitFramebuffer(
 		0, 0,
 		m_leftEyeFramebuffer.Width(), m_leftEyeFramebuffer.Height(),
 		0, 0,
-		App().MainWindow().Width(), App().MainWindow().Height(),
+		width, height,
 		GL_COLOR_BUFFER_BIT, GL_NEAREST
 	);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
+	// imgui
 	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplWin32_NewFrame();
+	ImGui_ImplSDL2_NewFrame();
 	ImGui::NewFrame();
 
-	static bool showDemoWindow;
-	ImGui::ShowDemoWindow(&showDemoWindow);
+	ImGui::ShowDemoWindow();
 
 	ImGui::Render();
+
+	// draw imgui
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-	SwapBuffers(GetDC(App().MainWindow().hWnd));
-
+	// end frame
+	SDL_GL_SwapWindow(App().MainWindow());
 	glFinish();
 }

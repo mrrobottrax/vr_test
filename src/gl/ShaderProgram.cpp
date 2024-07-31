@@ -1,10 +1,10 @@
 #include "pch.h"
 #include "ShaderProgram.h"
 
-void ShaderProgram::Compile(const char *vertSource, const char *fragSource, const char *debugName = "unnamed")
+void ShaderProgram::Compile(const void *vertSource, const void *fragSource, const char *debugName = "unnamed")
 {
-	GLuint vert = CompileShader(vertSource, GL_VERTEX_SHADER, debugName);
-	GLuint frag = CompileShader(fragSource, GL_FRAGMENT_SHADER, debugName);
+	GLuint vert = CompileShader((const char *)vertSource, GL_VERTEX_SHADER, debugName);
+	GLuint frag = CompileShader((const char *)fragSource, GL_FRAGMENT_SHADER, debugName);
 
 	m_program = glCreateProgram();
 	glAttachShader(m_program, vert);
@@ -30,12 +30,12 @@ GLuint ShaderProgram::CompileShader(const char *source, GLenum type, const char 
 		const char *typeName = "unknown";
 		switch (type)
 		{
-		case GL_VERTEX_SHADER:
-			typeName = "Vertex";
-			break;
-		case GL_FRAGMENT_SHADER:
-			typeName = "Fragment";
-			break;
+			case GL_VERTEX_SHADER:
+				typeName = "Vertex";
+				break;
+			case GL_FRAGMENT_SHADER:
+				typeName = "Fragment";
+				break;
 		}
 		throw std::runtime_error(std::format("Shader compilation of {} : {} failed!\n{}", debugName, typeName, infoLog));
 	}

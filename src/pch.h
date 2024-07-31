@@ -1,25 +1,27 @@
 #pragma once
 
-#include "imgui.h"
-#include "backends/imgui_impl_opengl3.h"
-#include "backends/imgui_impl_win32.h"
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
 
-#ifdef _WINDOWS
+#include <imgui.h>
+#include <imgui_impl_sdl2.h>
+#include <imgui_impl_opengl3.h>
 
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#ifdef _DEBUG
+#define DEBUG_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
+#define new DEBUG_NEW
+#endif
 
-#endif // _WINDOWS
-
-#include <GL/glew.h>
-#include <GL/wglew.h>
+#include <SDL2/SDL.h>
+#include <glad/glad.h>
 
 #include <openvr.h>
 
+// std
+
 #include <iostream>
-#include <combaseapi.h>
 #include <locale>
 #include <codecvt>
 #include <string>
 #include <format>
-#include <functional>

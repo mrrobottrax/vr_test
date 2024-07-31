@@ -1,0 +1,2 @@
+#define VrTest_VERSION_MAJOR @VrTest_VERSION_MAJOR@
+#define VrTest_VERSION_MINOR @VrTest_VERSION_MINOR@
